@@ -1,5 +1,6 @@
 [
   {
+    "key": "Gipszkarton",
     "name": "Gipszkarton",
     "description": "standard 12,5",
     "dimension": {"x": 2000, "y": 1200, "w": 12.5},
@@ -8,9 +9,19 @@
     "currency": "HUF"
   },
   {
+    "key": "CDProfil",
     "name": "CD profil",
     "description": "CD profil",
     "dimension": {"x": 3000, "y": 50, "w": 27},
+    "price": 0,
+    "price_m_m2": 0,
+    "currency": "HUF"
+  },
+  {
+    "key": "JobPrice",
+    "name": "Munkadíj",
+    "description": "Gipszkartonos óradíj",
+    "dimension": {"x": 0, "y": 0, "w": 0},
     "price": 0,
     "price_m_m2": 0,
     "currency": "HUF"

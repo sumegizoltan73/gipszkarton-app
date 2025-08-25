@@ -9,6 +9,7 @@ export type PartDimension = {
 };
 
 export type Part = {
+  key: string;
   name: string;
   description: string;
   dimension: PartDimension;
@@ -21,15 +22,22 @@ const parts$ = ajax("./dist/parts.json?nocache=" + (new Date()).getTime()).pipe(
   map(response => (response.response as Part[]))
 );
 
-let walls = 1;
+let priceList: any = {};
 
 window.onload = async function () {
   parts$.subscribe(part => {
     console.log(part);
     render(part);
+    storePriceList(part);
   });
   renderPartHead();
   handleAddWall();
+}
+
+function storePriceList(parts: Array<Part>){
+  parts.forEach(part => {
+    priceList[part.key] = `${part.price} ${part.currency}`;
+  });
 }
 
 function handleAddWall(){
@@ -42,9 +50,9 @@ function handleAddWall(){
   child.innerHTML = `
     <div class="col">
       <div class="input-group mb-3">
-        <input type="text" class="form-control" placeholder="Szélesség (mm)" aria-label="Szélesség (mm)" />
+        <input type="text" class="form-control dim-wall-x" placeholder="Szélesség (mm)" aria-label="Szélesség (mm)" />
         <span class="input-group-text"> X </span>
-        <input type="text" class="form-control" placeholder="Magasság (mm)" aria-label="Magasság (mm)" />
+        <input type="text" class="form-control dim-wall-y" placeholder="Magasság (mm)" aria-label="Magasság (mm)" />
       </div>
     </div>
     <div class="col">
@@ -64,7 +72,51 @@ function handleRemoveWall(this: GlobalEventHandlers, ev: PointerEvent){
 }
 
 function handleCalcWalls(){
-  console.log("calculating");
+  const xArray = document.getElementsByClassName("dim-wall-x");
+  let sum = 0;
+  for (const element of xArray) {
+    const elX = (<HTMLElement>element);
+    const elY = elX.nextSibling?.nextSibling?.nextSibling?.nextSibling;
+    if (elY) {
+      let sumPart = parseInt((<HTMLInputElement>elX).value) * parseInt((<HTMLInputElement>elY).value);
+      sum += sumPart;
+    }
+  }
+  const m2 = sum / (1000 * 1000);
+  const tableCnt = Math.ceil(m2 / (2000 * 1200 / (1000 * 1000)));
+  const fmCD = Math.ceil(m2) * ((2 * 1000 / 1000) + (1000 / 400));
+  const CDCount = Math.ceil(fmCD / 3);;
+
+  console.log(Math.ceil(m2), tableCnt, fmCD, CDCount);
+  const container = document.getElementById("part-foot-root");
+  if (!container) {
+    return;
+  }
+
+  const tablePrice = parseInt(priceList["Gipszkarton"].split(" ")[0]);
+  const tableCurrency = priceList["Gipszkarton"].split(" ")[1];
+  const CDPrice = parseInt(priceList["CDProfil"].split(" ")[0]);
+  const CDCurrency = priceList["CDProfil"].split(" ")[1];
+  const jobPrice = parseInt(priceList["JobPrice"].split(" ")[0]);
+  const jobCurrency = priceList["JobPrice"].split(" ")[1];
+
+  container.innerHTML = `
+    <h3>Anyagszükséglet és munkadíj</h2>
+    <div class="row mb-3">
+      <div class="col">
+        Gipszkarton (tábla): ${tableCnt} db ${tablePrice * tableCnt} ${tableCurrency}<br />
+        CD profil: ${CDCount} db azaz ${fmCD} méter ${CDPrice * CDCount} ${CDCurrency}<br />
+      </div>
+      <div class="col">
+        Munkadíj: ${jobPrice /12 * Math.ceil(m2)} ${jobCurrency}
+      </div>
+    </div>
+    <div class="row mb-3 bold text-primary">
+      <div class="col">
+        Összesen: ${(tablePrice * tableCnt) + (CDPrice * CDCount) + (jobPrice /12 * Math.ceil(m2))} ${jobCurrency}
+      </div>
+    </div>
+    `;
 }
 
 function renderPartHead(){
@@ -83,6 +135,8 @@ function renderPartHead(){
       </div>
     </div>
     <div id="part-body-root">
+    </div>
+    <div id="part-foot-root">
     </div>
     `;
   const btnAdd = document.getElementById("btnAddWall");
