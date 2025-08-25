@@ -38,7 +38,7 @@ function peldaFuggveny(bemenet: string | number): number {
   return bemenet * 15;
 }
 
-const parts$ = ajax("./asset/parts.json?nocache=" + (new Date()).getTime()).pipe(
+const parts$ = ajax("./dist/parts.json?nocache=" + (new Date()).getTime()).pipe(
   map(response => (response.response as Part[]))
 );
 
