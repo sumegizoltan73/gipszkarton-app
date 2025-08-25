@@ -1,5 +1,5 @@
 import { ajax } from "rxjs/ajax";
-import { forkJoin, map, switchMap, of } from "rxjs";
+import { map } from "rxjs";
 import "bootstrap";
 
 export type PartDimension = {
@@ -15,20 +15,6 @@ export type Part = {
   price: number;
   price_m_m2: number;
   currency: string;
-};
-
-export type Album = {
-  userId: number;
-  id: number;
-  title: string;
-  photos?: Array<Photo>;
-};
-
-export type Photo = {
-  id: number;
-  title: string;
-  url: string;
-  thumbnailUrl: string;
 };
 
 function peldaFuggveny(bemenet: string | number): number {
@@ -62,6 +48,7 @@ function render(parts: Array<Part>){
         <div class="col">Leírás</div>
         <div class="col">db Ár</div>
         <div class="col">m2 Ár</div>
+        <div class="col">Dimenzió</div>
       </div>
     ${parts.map(part => `
         <div class="row">
@@ -69,6 +56,7 @@ function render(parts: Array<Part>){
           <div class="col"><p>${part.description}</p></div>
           <div class="col">${part.price} ${part.currency}</div>
           <div class="col">${part.price_m_m2} ${part.currency}</div>
+          <div class="col">x:&nbsp;${part.dimension.x}&nbsp;mm, y:&nbsp;${part.dimension.y}&nbsp;mm, w:&nbsp;${part.dimension.w}&nbsp;mm</div>
         </div>
       `).join("")}
     </div>
