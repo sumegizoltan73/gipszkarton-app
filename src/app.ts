@@ -1,5 +1,5 @@
 import { ajax } from "rxjs/ajax";
-import { map } from "rxjs";
+import { forkJoin, map, switchMap, of } from "rxjs";
 import "bootstrap";
 
 export type CalcType = {
@@ -24,25 +24,12 @@ export type JobPriceType = {
   excluded: string[];
   included: string[];
 };
-
 export interface JobPrice extends JobPriceType {
   minHours_m2?: number;
   minHours_hour?: number;
-};
-const x: JobPrice = {
-  key: "",
-  applyForKey: "",
-  applyForUserId: 0,
-  workfloow: ["Survey", "Deliver", "Eat", "Planing", "Move", "Assemble", "Screw", "Glett", "Painting"],
-  excluded: [],
-  included: [],
-  strategy: [],
-  serviceRegion: [],
-  serviceUnit: [],
-  serviceUnitExt: [],
-  servicePlace: [],
-  serviceEstimation: [],
-  serviceFieldType: []
+  bestPrice_bottom_rate_perHour_constant?: string;
+  bestPrice_bottom_m2_perHour_constant?: number;
+  bestPrice_bottom_m2_perDay_constant?: number;
 };
 
 export type PartDimension = {
@@ -69,11 +56,26 @@ export type PriceListItem = {
   formatVersion: string;
   url: string;
   token: string;
+  jobPrices?: JobPrice[];
 };
 
 const parts$ = ajax("./dist/parts.json?nocache=" + (new Date()).getTime()).pipe(
   map(response => (response.response as Part[]))
 );
+
+const pricelist$ = ajax("./dist/pricelist.json?nocache=" + (new Date()).getTime()).pipe(
+  map(response => (response.response as PriceListItem[])),
+  switchMap(list => forkJoin([
+    of(list),
+    ...list.map(price => ajax(`${price?.url}?nocache=${(new Date()).getTime()}`).pipe(
+      map(response => ((response.response as any)?.jobPrice as JobPrice[]))
+    ))
+  ])),
+  map(([prices, ...allPrices]) => { 
+    return <PriceListItem[]>prices.map((price, i) => ({...price, jobPrices: allPrices[i]}));
+  })
+);
+
 
 let priceList: any = {};
 
@@ -82,14 +84,55 @@ window.onload = async function () {
     render(part);
     storePriceList(part);
   });
+  pricelist$.subscribe(list => {
+    storeUserPriceList(list);
+  });
   renderPartHead();
   handleAddWall();
 }
 
 function storePriceList(parts: Array<Part>){
   parts.forEach(part => {
-    priceList[part.key] = `${part.price} ${part.currency}`;
+    priceList[part.key] = { 
+      default: `${part.price} ${part.currency}` 
+    };
   });
+}
+
+function storeUserPriceList(allPrices: PriceListItem[]){
+  console.log("storeUserPr", allPrices);
+  
+  allPrices.forEach(jobprice => {
+    jobprice.jobPrices?.forEach(price => {
+      priceList[price.applyForKey] = {
+        ...priceList[price.applyForKey], 
+        [`user${price.applyForUserId}`]: { ...price } 
+      };
+    });
+  });
+  console.log("singleton", priceList);
+}
+
+function getFormatedPrice(price: string | undefined): [price: number, cur: string]{
+  let formated: [price: number, cur: string] = [0, ""];
+
+  if (typeof price === "undefined") {
+    return formated;
+  }
+
+  const arr = price?.split(" ");
+  if (arr.length === 2) {
+    return [parseInt(<string>arr[0]), <string>arr[1] ]
+  }
+  return formated;
+}
+
+function getM2Price(price: JobPrice, m2: number): string {
+  const rate = getFormatedPrice(price.bestPrice_bottom_rate_perHour_constant);
+  const [tablePrice, tableCurrency] = rate;
+  const m2PerHour = parseInt(`${price.bestPrice_bottom_m2_perHour_constant}`);
+  const m2Price = tablePrice / m2PerHour;
+  return `${m2Price * m2} ${tableCurrency}`;
 }
 
 function handleAddWall(){
@@ -144,27 +187,29 @@ function handleCalcWalls(){
     return;
   }
 
-  const tablePrice = parseInt(priceList["drywall"].split(" ")[0]);
-  const tableCurrency = priceList["drywall"].split(" ")[1];
-  const CDPrice = parseInt(priceList["CDProfile"].split(" ")[0]);
-  const CDCurrency = priceList["CDProfile"].split(" ")[1];
-  const jobPrice = parseInt(priceList["JobPrice"].split(" ")[0]);
-  const jobCurrency = priceList["JobPrice"].split(" ")[1];
+  const tablePrice = parseInt(priceList["drywall"].default.split(" ")[0]);
+  const tableCurrency = priceList["drywall"].default.split(" ")[1];
+  const CDPrice = parseInt(priceList["CDProfile"].default.split(" ")[0]);
+  const CDCurrency = priceList["CDProfile"].default.split(" ")[1];
 
   container.innerHTML = `
     <h3>Anyagszükséglet és munkadíj</h2>
     <div class="row mb-3">
       <div class="col">
-        Gipszkarton (tábla): ${tableCnt} db ${tablePrice * tableCnt} ${tableCurrency}<br />
+        Gipszkarton (tábla): ${tableCnt} db azaz ${Math.ceil(m2)} m2 ${tablePrice * tableCnt} ${tableCurrency}<br />
         CD profil: ${CDCount} db azaz ${fmCD} méter ${CDPrice * CDCount} ${CDCurrency}<br />
       </div>
       <div class="col">
-        Munkadíj: ${jobPrice /12 * Math.ceil(m2)} ${jobCurrency}
+        <b>Munkadíj:</b> <br />
+        ${Object.keys(priceList["drywall"]).filter((k) => priceList["drywall"][k].applyForUserId !== 0 && priceList["drywall"][k].applyForUserId !== undefined).map((el) => (`
+          <p>${(<JobPrice>priceList["drywall"][el]).key} - UserId: ${(<JobPrice>priceList["drywall"][el]).applyForUserId}</p>
+          <p>${getM2Price(<JobPrice>priceList["drywall"][el], Math.ceil(m2) )}</p>
+          `)).join("")}
       </div>
     </div>
     <div class="row mb-3 bold text-primary">
       <div class="col">
-        Összesen: ${(tablePrice * tableCnt) + (CDPrice * CDCount) + (jobPrice /12 * Math.ceil(m2))} ${jobCurrency}
+        Összesen: ${(tablePrice * tableCnt) + (CDPrice * CDCount) } ${tableCurrency} + Munkadíj
       </div>
     </div>
     `;
