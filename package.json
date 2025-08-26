@@ -2,7 +2,7 @@
   "scripts": {
     "clean": "rimraf dist/",
     "dev": "webpack --mode development --watch",
-    "init": "cp asset/parts.json dist/ && cp asset/parts.production.json dist/parts.json",
+    "init": "cp asset/*.json dist/ && cp asset/parts.production.json dist/parts.json",
     "copy": "cp -R node_modules/bootstrap/dist/css/bootstrap.min.* dist/ && cp -R src/**/*.css dist/ && cp -R src/**/*.html dist/",
     "build": "npm run clean && npm run init && tsc && npm run copy"
   },

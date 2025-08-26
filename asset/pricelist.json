@@ -1,0 +1,14 @@
+[
+  {
+    "userid": 124,
+    "formatVersion": "1.0.0",
+    "url": "./dist/price.prod.1.0.0.json",
+    "token": ""
+  },
+  {
+    "userid": 0,
+    "formatVersion": "1.0.0",
+    "url": "./dist/price.1.0.0.json",
+    "token": ""
+  }
+]

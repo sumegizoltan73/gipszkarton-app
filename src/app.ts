@@ -2,6 +2,49 @@ import { ajax } from "rxjs/ajax";
 import { map } from "rxjs";
 import "bootstrap";
 
+export type CalcType = {
+  id: string;
+  definition: string;
+  measure: string;
+  unit: string;
+};
+
+export type JobPriceType = {
+  key: string;
+  applyForKey: string;
+  applyForUserId: number;
+  strategy: Array<"MinHours"|"TravelFee"|"BestPrice">;
+  serviceRegion: Array<"city"|"county"|"country"|"unio"|"overseas">;
+  serviceUnit: Array<"hour"|"day"|"m2"|"km"|"rate">;
+  serviceUnitExt: Array<"minimum"|"max">;
+  servicePlace: Array<"bottom"|"top"|"tower"|"towerTop">;
+  serviceEstimation: Array<"perM2"|"perHour"|"perDay"|"inAHour"|"inADay">;
+  serviceFieldType: Array<"measure"|"constant">;
+  workfloow: Array<"Survey"|"Design"|"Travel"|"BusTravel"|"Sleep"|"Buy"|"Deliver"|"Eat"|"Planing"|"Move"|"Assemble"|"Screw"|"Glett"|"Painting">;
+  excluded: string[];
+  included: string[];
+};
+
+export interface JobPrice extends JobPriceType {
+  minHours_m2?: number;
+  minHours_hour?: number;
+};
+const x: JobPrice = {
+  key: "",
+  applyForKey: "",
+  applyForUserId: 0,
+  workfloow: ["Survey", "Deliver", "Eat", "Planing", "Move", "Assemble", "Screw", "Glett", "Painting"],
+  excluded: [],
+  included: [],
+  strategy: [],
+  serviceRegion: [],
+  serviceUnit: [],
+  serviceUnitExt: [],
+  servicePlace: [],
+  serviceEstimation: [],
+  serviceFieldType: []
+};
+
 export type PartDimension = {
   x: number;
   y: number;
@@ -12,10 +55,20 @@ export type Part = {
   key: string;
   name: string;
   description: string;
-  dimension: PartDimension;
+  dimension?: PartDimension;
   price: number;
   price_m_m2: number;
+  price_m_m2_unit?: string;
   currency: string;
+  jobPrice?: any[];
+  calc?: CalcType[];
+};
+
+export type PriceListItem = {
+  userid: number;
+  formatVersion: string;
+  url: string;
+  token: string;
 };
 
 const parts$ = ajax("./dist/parts.json?nocache=" + (new Date()).getTime()).pipe(
@@ -26,7 +79,6 @@ let priceList: any = {};
 
 window.onload = async function () {
   parts$.subscribe(part => {
-    console.log(part);
     render(part);
     storePriceList(part);
   });
@@ -87,16 +139,15 @@ function handleCalcWalls(){
   const fmCD = Math.ceil(m2) * ((2 * 1000 / 1000) + (1000 / 400));
   const CDCount = Math.ceil(fmCD / 3);;
 
-  console.log(Math.ceil(m2), tableCnt, fmCD, CDCount);
   const container = document.getElementById("part-foot-root");
   if (!container) {
     return;
   }
 
-  const tablePrice = parseInt(priceList["Gipszkarton"].split(" ")[0]);
-  const tableCurrency = priceList["Gipszkarton"].split(" ")[1];
-  const CDPrice = parseInt(priceList["CDProfil"].split(" ")[0]);
-  const CDCurrency = priceList["CDProfil"].split(" ")[1];
+  const tablePrice = parseInt(priceList["drywall"].split(" ")[0]);
+  const tableCurrency = priceList["drywall"].split(" ")[1];
+  const CDPrice = parseInt(priceList["CDProfile"].split(" ")[0]);
+  const CDCurrency = priceList["CDProfile"].split(" ")[1];
   const jobPrice = parseInt(priceList["JobPrice"].split(" ")[0]);
   const jobCurrency = priceList["JobPrice"].split(" ")[1];
 
@@ -170,7 +221,7 @@ function render(parts: Array<Part>){
           <div class="col"><p>${part.description}</p></div>
           <div class="col">${part.price} ${part.currency}</div>
           <div class="col">${part.price_m_m2} ${part.currency}</div>
-          <div class="col">x:&nbsp;${part.dimension.x}&nbsp;mm, y:&nbsp;${part.dimension.y}&nbsp;mm, w:&nbsp;${part.dimension.w}&nbsp;mm</div>
+          <div class="col">x:&nbsp;${part.dimension?.x}&nbsp;mm, y:&nbsp;${part.dimension?.y}&nbsp;mm, w:&nbsp;${part.dimension?.w}&nbsp;mm</div>
         </div>
       `).join("")}
     </div>
