@@ -100,8 +100,6 @@ function storePriceList(parts: Array<Part>){
 }
 
 function storeUserPriceList(allPrices: PriceListItem[]){
-  console.log("storeUserPr", allPrices);
-  
   allPrices.forEach(jobprice => {
     jobprice.jobPrices?.forEach(price => {
       priceList[price.applyForKey] = {
@@ -110,7 +108,7 @@ function storeUserPriceList(allPrices: PriceListItem[]){
       };
     });
   });
-  console.log("singleton", priceList);
+  //console.log("singleton", priceList);
 }
 
 function getFormatedPrice(price: string | undefined): [price: number, cur: string]{

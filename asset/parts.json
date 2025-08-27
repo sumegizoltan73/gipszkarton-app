@@ -18,14 +18,5 @@
     "price_m_m2": 0,
     "price_m_m2_unit": "méter",
     "currency": "HUF"
-  },
-  {
-    "key": "JobPrice",
-    "name": "Munkadíj",
-    "description": "Gipszkartonos óradíj",
-    "dimension": {"x": 0, "y": 0, "w": 0},
-    "price": 0,
-    "price_m_m2": 0,
-    "currency": "HUF"
   }
 ]
