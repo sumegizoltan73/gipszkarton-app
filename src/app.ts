@@ -88,7 +88,8 @@ window.onload = async function () {
     storeUserPriceList(list);
   });
   renderPartHead();
-  handleAddWall();
+  handleAddWall(undefined, undefined, "part-body-root");
+  handleAddWall(undefined, undefined, "part-wood-body-root");
 }
 
 function storePriceList(parts: Array<Part>){
@@ -133,9 +134,23 @@ function getM2Price(price: JobPrice, m2: number): string {
   return `${m2Price * m2} ${tableCurrency}`;
 }
 
-function handleAddWall(){
-  const container = document.getElementById("part-body-root");
-  if (!container) {
+function handleAddWall2(this: GlobalEventHandlers, ev: PointerEvent){
+  handleAddWall(this, ev);
+}
+
+function handleAddWall(t?: GlobalEventHandlers, e?: PointerEvent, id?: string){
+  let container: HTMLElement | null = null;
+  if (0 in arguments && 1 in arguments) {
+    if (t) {
+      container = (<HTMLElement>t).parentNode?.parentNode?.nextSibling?.nextSibling as HTMLElement;
+    }
+    if (id) {
+      const containerid = arguments[2];
+      container = document.getElementById(containerid);
+    }
+  }
+  
+  if (container == null) {
     return;
   }
   const child = document.createElement("div");
@@ -169,6 +184,8 @@ function handleCalcWalls(){
   let sum = 0;
   for (const element of xArray) {
     const elX = (<HTMLElement>element);
+    if ((<HTMLElement>elX.parentNode?.parentNode?.parentNode?.parentNode).id !=="part-body-root")
+      continue;
     const elY = elX.nextSibling?.nextSibling?.nextSibling?.nextSibling;
     if (elY) {
       let sumPart = parseInt((<HTMLInputElement>elX).value) * parseInt((<HTMLInputElement>elY).value);
@@ -213,6 +230,54 @@ function handleCalcWalls(){
     `;
 }
 
+function handleCalcWoodWalls(){
+  const xArray = document.getElementsByClassName("dim-wall-x");
+  let sum = 0;
+  for (const element of xArray) {
+    const elX = (<HTMLElement>element);
+    if ((<HTMLElement>elX.parentNode?.parentNode?.parentNode?.parentNode).id !=="part-wood-body-root")
+      continue;
+    const elY = elX.nextSibling?.nextSibling?.nextSibling?.nextSibling;
+    if (elY) {
+      let sumPart = parseInt((<HTMLInputElement>elX).value) * parseInt((<HTMLInputElement>elY).value);
+      sum += sumPart;
+    }
+  }
+  const m2 = sum / (1000 * 1000);
+  let fmWood = Math.ceil(m2) * ((2 * 1000 / 1000) + (1000 / 400));
+  fmWood = fmWood + Math.ceil(Math.sqrt(m2) * 2);
+  const woodCount = Math.ceil(fmWood / 4);
+
+  const container = document.getElementById("part-wood-foot-root");
+  if (!container) {
+    return;
+  }
+
+  const woodPrice = parseInt(priceList["FePallo5x15"].default.split(" ")[0]);
+  const woodCurrency = priceList["FePallo5x15"].default.split(" ")[1];
+
+  container.innerHTML = `
+    <h3>Anyagszükséglet és munkadíj</h2>
+    <div class="row mb-3">
+      <div class="col">
+        Deszka: ${woodCount} db azaz ${fmWood} méter ${woodPrice * woodCount} ${woodCurrency}<br />
+      </div>
+      <div class="col">
+        <b>Munkadíj:</b> <br />
+        ${Object.keys(priceList["FePallo5x15"]).filter((k) => priceList["FePallo5x15"][k].applyForUserId !== 0 && priceList["FePallo5x15"][k].applyForUserId !== undefined).map((el) => (`
+          <p>${(<JobPrice>priceList["FePallo5x15"][el]).key} - UserId: ${(<JobPrice>priceList["FePallo5x15"][el]).applyForUserId}</p>
+          <p>${getM2Price(<JobPrice>priceList["FePallo5x15"][el], Math.ceil(m2) )}</p>
+          `)).join("")}
+      </div>
+    </div>
+    <div class="row mb-3 bold text-primary">
+      <div class="col">
+        Összesen: ${(woodPrice * woodCount) } ${woodCurrency} + Munkadíj
+      </div>
+    </div>
+    `;
+}
+
 function renderPartHead(){
   const container = document.getElementById("part-head-root");
   if (!container) {
@@ -232,14 +297,36 @@ function renderPartHead(){
     </div>
     <div id="part-foot-root">
     </div>
+
+    <h2>Favázas fal kalkulátor (palló méret 15x5x...cm)</h2>
+    <div class="row mb-3">
+      <div class="col">
+        <button id="btnAddWoodWall" type="button" class="btn btn-primary"><i class="bi bi-node-plus"></i>Új válaszfal</button>
+      </div>
+      <div class="col">
+        <button id="btnCalcWoodWalls" type="button" class="btn btn-primary"><i class="bi bi-check-lg"></i></i>Kiszámol</button>
+      </div>
+    </div>
+    <div id="part-wood-body-root">
+    </div>
+    <div id="part-wood-foot-root">
+    </div>
     `;
   const btnAdd = document.getElementById("btnAddWall");
   if (btnAdd) {
-    btnAdd.onclick = handleAddWall;
+    btnAdd.onclick = handleAddWall2;
   }
   const btnCalc = document.getElementById("btnCalcWalls");
   if (btnCalc) {
     btnCalc.onclick = handleCalcWalls;
+  }
+  const btnWoodAdd = document.getElementById("btnAddWoodWall");
+  if (btnWoodAdd) {
+    btnWoodAdd.onclick = handleAddWall2;
+  }
+  const btnWoodCalc = document.getElementById("btnCalcWoodWalls");
+  if (btnWoodCalc) {
+    btnWoodCalc.onclick = handleCalcWoodWalls;
   }
 }
 
