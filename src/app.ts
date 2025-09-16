@@ -9,6 +9,22 @@ export type CalcType = {
   unit: string;
 };
 
+const user = {
+   id: 1,
+   username: "Zoltan"
+};
+interface UserType {id: number; username: string; address?: string;}
+interface UserUnDefAddrType {id: number; username: string; address: undefined;}
+interface UserWithAddrType {id: number; username: string; address: string;}
+
+const x = (<any>user).address;
+const w: string = typeof (<UserUnDefAddrType>user).address === "string" ? 
+    <string>(<UserType>user).address : 
+    "";
+const zs: string = (<UserWithAddrType>user).address;
+const zz: string = <string>(<UserType>user).address;
+const zzs: string = (<UserType>user).address ?? "";
+
 export type JobPriceType = {
   key: string;
   applyForKey: string;
