@@ -2,3 +2,4 @@
 /node_modules
 /asset/parts.production.json
 /asset/price.prod.1.0.0.json
+.vstags
