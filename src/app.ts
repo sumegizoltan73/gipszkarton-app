@@ -125,7 +125,6 @@ function storeUserPriceList(allPrices: PriceListItem[]){
       };
     });
   });
-  //console.log("singleton", priceList);
 }
 
 function getFormatedPrice(price: string | undefined): [price: number, cur: string]{
